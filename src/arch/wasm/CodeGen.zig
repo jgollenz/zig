@@ -987,7 +987,7 @@ fn genFunc(self: *Self) InnerError!void {
         // store stack pointer so we can restore it when we return from the function
         try prologue.append(.{ .tag = .local_tee, .data = .{ .label = self.initial_stack_value.local } });
         // get the total stack size
-        const aligned_stack = std.mem.alignForwardGeneric(u32, self.stack_size, self.stack_alignment);
+        const aligned_stack = std.mem.alignUpGeneric(u32, self.stack_size, self.stack_alignment);
         try prologue.append(.{ .tag = .i32_const, .data = .{ .imm32 = @intCast(i32, aligned_stack) } });
         // substract it from the current stack pointer
         try prologue.append(.{ .tag = .i32_sub, .data = .{ .tag = {} } });
@@ -1246,7 +1246,7 @@ fn allocStack(self: *Self, ty: Type) !WValue {
         self.stack_alignment = abi_align;
     }
 
-    const offset = std.mem.alignForwardGeneric(u32, self.stack_size, abi_align);
+    const offset = std.mem.alignUpGeneric(u32, self.stack_size, abi_align);
     defer self.stack_size = offset + abi_size;
 
     return WValue{ .stack_offset = offset };
@@ -1279,7 +1279,7 @@ fn allocStackPtr(self: *Self, inst: Air.Inst.Index) !WValue {
         self.stack_alignment = abi_alignment;
     }
 
-    const offset = std.mem.alignForwardGeneric(u32, self.stack_size, abi_alignment);
+    const offset = std.mem.alignUpGeneric(u32, self.stack_size, abi_alignment);
     defer self.stack_size = offset + abi_size;
 
     return WValue{ .stack_offset = offset };
@@ -2282,7 +2282,7 @@ fn lowerParentPtr(self: *Self, ptr_val: Value, ptr_child_ty: Type) InnerError!WV
                     if (layout.payload_align > layout.tag_align) break :blk 0;
 
                     // tag is stored first so calculate offset from where payload starts
-                    const offset = @intCast(u32, std.mem.alignForwardGeneric(u64, layout.tag_size, layout.tag_align));
+                    const offset = @intCast(u32, std.mem.alignUpGeneric(u64, layout.tag_size, layout.tag_align));
                     break :blk offset;
                 },
                 else => unreachable,

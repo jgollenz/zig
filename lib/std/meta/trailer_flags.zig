@@ -105,9 +105,9 @@ pub fn TrailerFlags(comptime Fields: type) type {
                 const active = (self.bits & (1 << i)) != 0;
                 if (i == @enumToInt(field)) {
                     assert(active);
-                    return mem.alignForwardGeneric(usize, off, @alignOf(field_info.field_type));
+                    return mem.alignUpGeneric(usize, off, @alignOf(field_info.field_type));
                 } else if (active) {
-                    off = mem.alignForwardGeneric(usize, off, @alignOf(field_info.field_type));
+                    off = mem.alignUpGeneric(usize, off, @alignOf(field_info.field_type));
                     off += @sizeOf(field_info.field_type);
                 }
             }
@@ -123,7 +123,7 @@ pub fn TrailerFlags(comptime Fields: type) type {
                 if (@sizeOf(field.field_type) == 0)
                     continue;
                 if ((self.bits & (1 << i)) != 0) {
-                    off = mem.alignForwardGeneric(usize, off, @alignOf(field.field_type));
+                    off = mem.alignUpGeneric(usize, off, @alignOf(field.field_type));
                     off += @sizeOf(field.field_type);
                 }
             }

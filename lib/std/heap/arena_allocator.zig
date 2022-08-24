@@ -66,7 +66,7 @@ pub const ArenaAllocator = struct {
         while (true) {
             const cur_buf = cur_node.data[@sizeOf(BufNode)..];
             const addr = @ptrToInt(cur_buf.ptr) + self.state.end_index;
-            const adjusted_addr = mem.alignForward(addr, ptr_align);
+            const adjusted_addr = mem.alignUp(addr, ptr_align);
             const adjusted_index = self.state.end_index + (adjusted_addr - addr);
             const new_end_index = adjusted_index + n;
 

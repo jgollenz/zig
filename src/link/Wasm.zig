@@ -1367,7 +1367,7 @@ fn allocateAtoms(self: *Wasm) !void {
         var atom: *Atom = entry.value_ptr.*.getFirst();
         var offset: u32 = 0;
         while (true) {
-            offset = std.mem.alignForwardGeneric(u32, offset, atom.alignment);
+            offset = std.mem.alignUpGeneric(u32, offset, atom.alignment);
             atom.offset = offset;
             const symbol_loc = atom.symbolLoc();
             log.debug("Atom '{s}' allocated from 0x{x:0>8} to 0x{x:0>8} size={d}", .{
@@ -1380,7 +1380,7 @@ fn allocateAtoms(self: *Wasm) !void {
             self.symbol_atom.putAssumeCapacity(atom.symbolLoc(), atom); // Update atom pointers
             atom = atom.next orelse break;
         }
-        segment.size = std.mem.alignForwardGeneric(u32, offset, segment.alignment);
+        segment.size = std.mem.alignUpGeneric(u32, offset, segment.alignment);
     }
 }
 
@@ -1664,7 +1664,7 @@ fn setupMemory(self: *Wasm) !void {
     const is_obj = self.base.options.output_mode == .Obj;
 
     if (place_stack_first and !is_obj) {
-        memory_ptr = std.mem.alignForwardGeneric(u64, memory_ptr, stack_alignment);
+        memory_ptr = std.mem.alignUpGeneric(u64, memory_ptr, stack_alignment);
         memory_ptr += stack_size;
         // We always put the stack pointer global at index 0
         self.wasm_globals.items[0].init.i32_const = @bitCast(i32, @intCast(u32, memory_ptr));
@@ -1673,14 +1673,14 @@ fn setupMemory(self: *Wasm) !void {
     var offset: u32 = @intCast(u32, memory_ptr);
     for (self.data_segments.values()) |segment_index| {
         const segment = &self.segments.items[segment_index];
-        memory_ptr = std.mem.alignForwardGeneric(u64, memory_ptr, segment.alignment);
+        memory_ptr = std.mem.alignUpGeneric(u64, memory_ptr, segment.alignment);
         memory_ptr += segment.size;
         segment.offset = offset;
         offset += segment.size;
     }
 
     if (!place_stack_first and !is_obj) {
-        memory_ptr = std.mem.alignForwardGeneric(u64, memory_ptr, stack_alignment);
+        memory_ptr = std.mem.alignUpGeneric(u64, memory_ptr, stack_alignment);
         memory_ptr += stack_size;
         self.wasm_globals.items[0].init.i32_const = @bitCast(i32, @intCast(u32, memory_ptr));
     }
@@ -1707,7 +1707,7 @@ fn setupMemory(self: *Wasm) !void {
 
     // In case we do not import memory, but define it ourselves,
     // set the minimum amount of pages on the memory section.
-    self.memories.limits.min = @intCast(u32, std.mem.alignForwardGeneric(u64, memory_ptr, page_size) / page_size);
+    self.memories.limits.min = @intCast(u32, std.mem.alignUpGeneric(u64, memory_ptr, page_size) / page_size);
     log.debug("Total memory pages: {d}", .{self.memories.limits.min});
 
     if (self.base.options.max_memory) |max_memory| {

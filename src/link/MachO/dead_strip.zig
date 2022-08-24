@@ -279,7 +279,7 @@ fn prune(arena: Allocator, alive: std.AutoHashMap(*Atom, void), macho_file: *Mac
 
         while (true) {
             const atom_alignment = try math.powi(u32, 2, atom.alignment);
-            const aligned_end_addr = mem.alignForwardGeneric(u64, section.header.size, atom_alignment);
+            const aligned_end_addr = mem.alignUpGeneric(u64, section.header.size, atom_alignment);
             const padding = aligned_end_addr - section.header.size;
             section.header.size += padding + atom.size;
             section.header.@"align" = @maximum(section.header.@"align", atom.alignment);

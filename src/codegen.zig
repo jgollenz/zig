@@ -748,7 +748,7 @@ pub fn generateSymbol(
                     .fail => |em| return Result{ .fail = em },
                 }
                 const unpadded_end = code.items.len - begin;
-                const padded_end = mem.alignForwardGeneric(u64, unpadded_end, abi_align);
+                const padded_end = mem.alignUpGeneric(u64, unpadded_end, abi_align);
                 const padding = math.cast(usize, padded_end - unpadded_end) orelse return error.Overflow;
 
                 if (padding > 0) {
@@ -770,7 +770,7 @@ pub fn generateSymbol(
                     .fail => |em| return Result{ .fail = em },
                 }
                 const unpadded_end = code.items.len - begin;
-                const padded_end = mem.alignForwardGeneric(u64, unpadded_end, abi_align);
+                const padded_end = mem.alignUpGeneric(u64, unpadded_end, abi_align);
                 const padding = math.cast(usize, padded_end - unpadded_end) orelse return error.Overflow;
 
                 if (padding > 0) {
@@ -888,7 +888,7 @@ pub fn errUnionPayloadOffset(payload_ty: Type, target: std.Target) u64 {
     if (payload_align >= error_align) {
         return 0;
     } else {
-        return mem.alignForwardGeneric(u64, Type.anyerror.abiSize(target), payload_align);
+        return mem.alignUpGeneric(u64, Type.anyerror.abiSize(target), payload_align);
     }
 }
 
@@ -896,7 +896,7 @@ pub fn errUnionErrorOffset(payload_ty: Type, target: std.Target) u64 {
     const payload_align = payload_ty.abiAlignment(target);
     const error_align = Type.anyerror.abiAlignment(target);
     if (payload_align >= error_align) {
-        return mem.alignForwardGeneric(u64, payload_ty.abiSize(target), error_align);
+        return mem.alignUpGeneric(u64, payload_ty.abiSize(target), error_align);
     } else {
         return 0;
     }

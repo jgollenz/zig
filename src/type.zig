@@ -3315,7 +3315,7 @@ pub const Type = extern union {
                         .val = try Value.Tag.lazy_size.create(strat.lazy, ty),
                     },
                 };
-                const result = std.mem.alignForwardGeneric(u64, total_bytes, alignment);
+                const result = std.mem.alignUpGeneric(u64, total_bytes, alignment);
                 return AbiSizeAdvanced{ .scalar = result };
             },
 
@@ -3459,14 +3459,14 @@ pub const Type = extern union {
                 var size: u64 = 0;
                 if (code_align > payload_align) {
                     size += code_size;
-                    size = std.mem.alignForwardGeneric(u64, size, payload_align);
+                    size = std.mem.alignUpGeneric(u64, size, payload_align);
                     size += payload_size;
-                    size = std.mem.alignForwardGeneric(u64, size, code_align);
+                    size = std.mem.alignUpGeneric(u64, size, code_align);
                 } else {
                     size += payload_size;
-                    size = std.mem.alignForwardGeneric(u64, size, code_align);
+                    size = std.mem.alignUpGeneric(u64, size, code_align);
                     size += code_size;
-                    size = std.mem.alignForwardGeneric(u64, size, payload_align);
+                    size = std.mem.alignUpGeneric(u64, size, payload_align);
                 }
                 return AbiSizeAdvanced{ .scalar = size };
             },
@@ -3494,7 +3494,7 @@ pub const Type = extern union {
 
     fn intAbiSize(bits: u16, target: Target) u64 {
         const alignment = intAbiAlignment(bits, target);
-        return std.mem.alignForwardGeneric(u64, (bits + 7) / 8, alignment);
+        return std.mem.alignUpGeneric(u64, (bits + 7) / 8, alignment);
     }
 
     fn intAbiAlignment(bits: u16, target: Target) u32 {
@@ -5663,7 +5663,7 @@ pub const Type = extern union {
 
             const field_align = field.alignment(it.target, it.struct_obj.layout);
             it.big_align = @maximum(it.big_align, field_align);
-            it.offset = std.mem.alignForwardGeneric(u64, it.offset, field_align);
+            it.offset = std.mem.alignUpGeneric(u64, it.offset, field_align);
             defer it.offset += field.ty.abiSize(it.target);
             return FieldOffset{ .field = it.field, .offset = it.offset };
         }
@@ -5691,7 +5691,7 @@ pub const Type = extern union {
                         return field_offset.offset;
                 }
 
-                return std.mem.alignForwardGeneric(u64, it.offset, @maximum(it.big_align, 1));
+                return std.mem.alignUpGeneric(u64, it.offset, @maximum(it.big_align, 1));
             },
 
             .tuple, .anon_struct => {
@@ -5710,11 +5710,11 @@ pub const Type = extern union {
 
                     const field_align = field_ty.abiAlignment(target);
                     big_align = @maximum(big_align, field_align);
-                    offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                    offset = std.mem.alignUpGeneric(u64, offset, field_align);
                     if (i == index) return offset;
                     offset += field_ty.abiSize(target);
                 }
-                offset = std.mem.alignForwardGeneric(u64, offset, @maximum(big_align, 1));
+                offset = std.mem.alignUpGeneric(u64, offset, @maximum(big_align, 1));
                 return offset;
             },
 
@@ -5724,7 +5724,7 @@ pub const Type = extern union {
                 const layout = union_obj.getLayout(target, true);
                 if (layout.tag_align >= layout.payload_align) {
                     // {Tag, Payload}
-                    return std.mem.alignForwardGeneric(u64, layout.tag_size, layout.payload_align);
+                    return std.mem.alignUpGeneric(u64, layout.tag_size, layout.payload_align);
                 } else {
                     // {Payload, Tag}
                     return 0;

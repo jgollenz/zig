@@ -276,7 +276,7 @@ pub fn writeAdhocSignature(
     self.code_directory.inner.execSegFlags = if (opts.output_mode == .Exe) macho.CS_EXECSEG_MAIN_BINARY else 0;
     self.code_directory.inner.codeLimit = opts.file_size;
 
-    const total_pages = mem.alignForward(opts.file_size, self.page_size) / self.page_size;
+    const total_pages = mem.alignUp(opts.file_size, self.page_size) / self.page_size;
 
     var buffer = try allocator.alloc(u8, self.page_size);
     defer allocator.free(buffer);
@@ -373,7 +373,7 @@ pub fn size(self: CodeSignature) u32 {
 pub fn estimateSize(self: CodeSignature, file_size: u64) u32 {
     var ssize: u64 = @sizeOf(macho.SuperBlob) + @sizeOf(macho.BlobIndex) + self.code_directory.size();
     // Approx code slots
-    const total_pages = mem.alignForwardGeneric(u64, file_size, self.page_size) / self.page_size;
+    const total_pages = mem.alignUpGeneric(u64, file_size, self.page_size) / self.page_size;
     ssize += total_pages * hash_size;
     var n_special_slots: u32 = 0;
     if (self.requirements) |req| {
@@ -388,7 +388,7 @@ pub fn estimateSize(self: CodeSignature, file_size: u64) u32 {
         ssize += @sizeOf(macho.BlobIndex) + sig.size();
     }
     ssize += n_special_slots * hash_size;
-    return @intCast(u32, mem.alignForwardGeneric(u64, ssize, @sizeOf(u64)));
+    return @intCast(u32, mem.alignUpGeneric(u64, ssize, @sizeOf(u64)));
 }
 
 pub fn clear(self: *CodeSignature, allocator: Allocator) void {

@@ -189,8 +189,8 @@ pub fn openPath(allocator: Allocator, sub_path: []const u8, options: link.Option
     const default_offset_table_size = file_alignment;
     const default_size_of_code = 0;
 
-    self.section_data_offset = mem.alignForwardGeneric(u32, self.section_table_offset + section_table_size, file_alignment);
-    const section_data_relative_virtual_address = mem.alignForwardGeneric(u32, self.section_table_offset + section_table_size, section_alignment);
+    self.section_data_offset = mem.alignUpGeneric(u32, self.section_table_offset + section_table_size, file_alignment);
+    const section_data_relative_virtual_address = mem.alignUpGeneric(u32, self.section_table_offset + section_table_size, section_alignment);
     self.offset_table_virtual_address = default_image_base + section_data_relative_virtual_address;
     self.offset_table_size = default_offset_table_size;
     self.section_table_offset = section_table_offset;
@@ -198,7 +198,7 @@ pub fn openPath(allocator: Allocator, sub_path: []const u8, options: link.Option
     self.text_section_size = default_size_of_code;
 
     // Size of file when loaded in memory
-    const size_of_image = mem.alignForwardGeneric(u32, self.text_section_virtual_address - default_image_base + default_size_of_code, section_alignment);
+    const size_of_image = mem.alignUpGeneric(u32, self.text_section_virtual_address - default_image_base + default_size_of_code, section_alignment);
 
     mem.writeIntLittle(u16, hdr_data[index..][0..2], optional_header_size);
     index += 2;
@@ -463,7 +463,7 @@ fn allocateTextBlock(self: *Coff, text_block: *TextBlock, new_block_size: u64, a
             const free_block = self.text_block_free_list.items[i];
 
             const next_block_text_offset = free_block.text_offset + free_block.capacity();
-            const new_block_text_offset = mem.alignForwardGeneric(u64, free_block.getVAddr(self.*) + free_block.size, alignment) - self.text_section_virtual_address;
+            const new_block_text_offset = mem.alignUpGeneric(u64, free_block.getVAddr(self.*) + free_block.size, alignment) - self.text_section_virtual_address;
             if (new_block_text_offset < next_block_text_offset and next_block_text_offset - new_block_text_offset >= new_block_min_capacity) {
                 block_placement = free_block;
 
@@ -482,7 +482,7 @@ fn allocateTextBlock(self: *Coff, text_block: *TextBlock, new_block_size: u64, a
                 continue;
             }
         } else if (self.last_text_block) |last| {
-            const new_block_vaddr = mem.alignForwardGeneric(u64, last.getVAddr(self.*) + last.size, alignment);
+            const new_block_vaddr = mem.alignUpGeneric(u64, last.getVAddr(self.*) + last.size, alignment);
             block_placement = last;
             break :blk new_block_vaddr;
         } else {
@@ -492,10 +492,10 @@ fn allocateTextBlock(self: *Coff, text_block: *TextBlock, new_block_size: u64, a
 
     const expand_text_section = block_placement == null or block_placement.?.next == null;
     if (expand_text_section) {
-        const needed_size = @intCast(u32, mem.alignForwardGeneric(u64, vaddr + new_block_size - self.text_section_virtual_address, file_alignment));
+        const needed_size = @intCast(u32, mem.alignUpGeneric(u64, vaddr + new_block_size - self.text_section_virtual_address, file_alignment));
         if (needed_size > self.text_section_size) {
-            const current_text_section_virtual_size = mem.alignForwardGeneric(u32, self.text_section_size, section_alignment);
-            const new_text_section_virtual_size = mem.alignForwardGeneric(u32, needed_size, section_alignment);
+            const current_text_section_virtual_size = mem.alignUpGeneric(u32, self.text_section_size, section_alignment);
+            const new_text_section_virtual_size = mem.alignUpGeneric(u32, needed_size, section_alignment);
             if (current_text_section_virtual_size != new_text_section_virtual_size) {
                 self.size_of_image_dirty = true;
                 // Write new virtual size
@@ -538,7 +538,7 @@ fn allocateTextBlock(self: *Coff, text_block: *TextBlock, new_block_size: u64, a
 
 fn growTextBlock(self: *Coff, text_block: *TextBlock, new_block_size: u64, alignment: u64) !u64 {
     const block_vaddr = text_block.getVAddr(self.*);
-    const align_ok = mem.alignBackwardGeneric(u64, block_vaddr, alignment) == block_vaddr;
+    const align_ok = mem.alignDownGeneric(u64, block_vaddr, alignment) == block_vaddr;
     const need_realloc = !align_ok or new_block_size > text_block.capacity();
     if (!need_realloc) return @as(u64, block_vaddr);
     return self.allocateTextBlock(text_block, new_block_size, alignment);
@@ -610,8 +610,8 @@ fn writeOffsetTableEntry(self: *Coff, index: usize) !void {
         mem.writeIntLittle(u32, buf[0..4], new_text_section_start);
         try self.base.file.?.pwriteAll(buf[0..4], self.section_table_offset + 40 + 20);
 
-        const current_virtual_size = mem.alignForwardGeneric(u32, self.offset_table_size, section_alignment);
-        const new_virtual_size = mem.alignForwardGeneric(u32, new_raw_size, section_alignment);
+        const current_virtual_size = mem.alignUpGeneric(u32, self.offset_table_size, section_alignment);
+        const new_virtual_size = mem.alignUpGeneric(u32, new_raw_size, section_alignment);
         // If we had to move in the virtual address space, we need to fix the VAs in the offset table, as well as the virtual address of the `.text` section
         // and the virtual size of the `.got` section
 
@@ -919,7 +919,7 @@ pub fn flushModule(self: *Coff, comp: *Compilation, prog_node: *std.Progress.Nod
     }
 
     if (self.base.options.output_mode == .Exe and self.size_of_image_dirty) {
-        const new_size_of_image = mem.alignForwardGeneric(u32, self.text_section_virtual_address - default_image_base + self.text_section_size, section_alignment);
+        const new_size_of_image = mem.alignUpGeneric(u32, self.text_section_virtual_address - default_image_base + self.text_section_size, section_alignment);
         var buf: [4]u8 = undefined;
         mem.writeIntLittle(u32, &buf, new_size_of_image);
         try self.base.file.?.pwriteAll(&buf, self.optional_header_offset + 56);

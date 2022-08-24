@@ -452,7 +452,7 @@ fn gen(self: *Self) !void {
             // The address of where to store the return value is in
             // r0. As this register might get overwritten along the
             // way, save the address to the stack.
-            const stack_offset = mem.alignForwardGeneric(u32, self.next_stack_offset, 4) + 4;
+            const stack_offset = mem.alignUpGeneric(u32, self.next_stack_offset, 4) + 4;
             self.next_stack_offset = stack_offset;
             self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
 
@@ -488,7 +488,7 @@ fn gen(self: *Self) !void {
 
         // Backpatch stack offset
         const total_stack_size = self.max_end_stack + self.saved_regs_stack_space;
-        const aligned_total_stack_end = mem.alignForwardGeneric(u32, total_stack_size, self.stack_align);
+        const aligned_total_stack_end = mem.alignUpGeneric(u32, total_stack_size, self.stack_align);
         const stack_size = aligned_total_stack_end - self.saved_regs_stack_space;
         self.max_end_stack = stack_size;
         if (Instruction.Operand.fromU32(stack_size)) |op| {
@@ -899,7 +899,7 @@ fn allocMem(self: *Self, inst: Air.Inst.Index, abi_size: u32, abi_align: u32) !u
     if (abi_align > self.stack_align)
         self.stack_align = abi_align;
     // TODO find a free slot instead of always appending
-    const offset = mem.alignForwardGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
+    const offset = mem.alignUpGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
     self.next_stack_offset = offset;
     self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
     try self.stack.putNoClobber(self.gpa, offset, .{
@@ -3851,7 +3851,7 @@ fn airRetLoad(self: *Self, inst: Air.Inst.Index) !void {
                 if (abi_align > self.stack_align)
                     self.stack_align = abi_align;
                 // TODO find a free slot instead of always appending
-                const offset = mem.alignForwardGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
+                const offset = mem.alignUpGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
                 self.next_stack_offset = offset;
                 self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
 
@@ -5769,7 +5769,7 @@ fn resolveCallingConventionValues(self: *Self, fn_ty: Type) !CallMCValues {
 
             for (param_types) |ty, i| {
                 if (ty.abiAlignment(self.target.*) == 8)
-                    ncrn = std.mem.alignForwardGeneric(usize, ncrn, 2);
+                    ncrn = std.mem.alignUpGeneric(usize, ncrn, 2);
 
                 const param_size = @intCast(u32, ty.abiSize(self.target.*));
                 if (std.math.divCeil(u32, param_size, 4) catch unreachable <= 4 - ncrn) {
@@ -5784,7 +5784,7 @@ fn resolveCallingConventionValues(self: *Self, fn_ty: Type) !CallMCValues {
                 } else {
                     ncrn = 4;
                     if (ty.abiAlignment(self.target.*) == 8)
-                        nsaa = std.mem.alignForwardGeneric(u32, nsaa, 8);
+                        nsaa = std.mem.alignUpGeneric(u32, nsaa, 8);
 
                     result.args[i] = .{ .stack_argument_offset = nsaa };
                     nsaa += param_size;
@@ -5822,7 +5822,7 @@ fn resolveCallingConventionValues(self: *Self, fn_ty: Type) !CallMCValues {
                     const param_size = @intCast(u32, ty.abiSize(self.target.*));
                     const param_alignment = ty.abiAlignment(self.target.*);
 
-                    stack_offset = std.mem.alignForwardGeneric(u32, stack_offset, param_alignment);
+                    stack_offset = std.mem.alignUpGeneric(u32, stack_offset, param_alignment);
                     result.args[i] = .{ .stack_argument_offset = stack_offset };
                     stack_offset += param_size;
                 } else {

@@ -409,7 +409,7 @@ fn gen(self: *Self) InnerError!void {
             // The address where to store the return value for the caller is in `.rdi`
             // register which the callee is free to clobber. Therefore, we purposely
             // spill it to stack immediately.
-            const stack_offset = mem.alignForwardGeneric(u32, self.next_stack_offset + 8, 8);
+            const stack_offset = mem.alignUpGeneric(u32, self.next_stack_offset + 8, 8);
             self.next_stack_offset = stack_offset;
             self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
 
@@ -493,7 +493,7 @@ fn gen(self: *Self) InnerError!void {
 
         const aligned_stack_end = @intCast(
             u32,
-            mem.alignForward(self.max_end_stack + saved_regs_stack_space, self.stack_align),
+            mem.alignUp(self.max_end_stack + saved_regs_stack_space, self.stack_align),
         );
         if (aligned_stack_end > 0) {
             self.mir_instructions.set(backpatch_stack_sub, .{
@@ -871,7 +871,7 @@ fn allocMem(self: *Self, inst: Air.Inst.Index, abi_size: u32, abi_align: u32) !u
     if (abi_align > self.stack_align)
         self.stack_align = abi_align;
     // TODO find a free slot instead of always appending
-    const offset = mem.alignForwardGeneric(u32, self.next_stack_offset + abi_size, abi_align);
+    const offset = mem.alignUpGeneric(u32, self.next_stack_offset + abi_size, abi_align);
     self.next_stack_offset = offset;
     self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
     try self.stack.putNoClobber(self.gpa, offset, .{
@@ -7120,7 +7120,7 @@ fn resolveCallingConventionValues(self: *Self, fn_ty: Type) !CallMCValues {
                     result.args[i] = .{ .register = aliased_reg };
                     next_int_reg += 1;
                 } else {
-                    const offset = mem.alignForwardGeneric(u32, next_stack_offset + param_size, param_align);
+                    const offset = mem.alignUpGeneric(u32, next_stack_offset + param_size, param_align);
                     result.args[i] = .{ .stack_offset = @intCast(i32, offset) };
                     next_stack_offset = offset;
                 }
@@ -7131,7 +7131,7 @@ fn resolveCallingConventionValues(self: *Self, fn_ty: Type) !CallMCValues {
             // the args onto the stack so that there is no padding between the first argument and
             // the standard preamble.
             // alignment padding | args ... | ret addr | $rbp |
-            result.stack_byte_count = mem.alignForwardGeneric(u32, next_stack_offset, result.stack_align);
+            result.stack_byte_count = mem.alignUpGeneric(u32, next_stack_offset, result.stack_align);
         },
         else => return self.fail("TODO implement function parameters and return values for {} on x86_64", .{cc}),
     }

@@ -42,8 +42,8 @@ pub const Socket = struct {
                 pub const expected_alignment = 8;
 
                 pub const padding_size = expected_size -
-                    mem.alignForward(@sizeOf(Address.Native.Length), expected_alignment) -
-                    mem.alignForward(@sizeOf(Address.Native.Family), expected_alignment);
+                    mem.alignUp(@sizeOf(Address.Native.Length), expected_alignment) -
+                    mem.alignUp(@sizeOf(Address.Native.Family), expected_alignment);
 
                 len: Address.Native.Length align(expected_alignment) = undefined,
                 family: Address.Native.Family align(expected_alignment) = undefined,

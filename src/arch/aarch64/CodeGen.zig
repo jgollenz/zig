@@ -339,7 +339,7 @@ pub fn generate(
         .prev_di_pc = 0,
         .prev_di_line = module_fn.lbrace_line,
         .prev_di_column = module_fn.lbrace_column,
-        .stack_size = mem.alignForwardGeneric(u32, function.max_end_stack, function.stack_align),
+        .stack_size = mem.alignUpGeneric(u32, function.max_end_stack, function.stack_align),
         .saved_regs_stack_space = function.saved_regs_stack_space,
     };
     defer emit.deinit();
@@ -427,7 +427,7 @@ fn gen(self: *Self) !void {
             const ptr_bytes = @divExact(ptr_bits, 8);
             const ret_ptr_reg = registerAlias(.x0, ptr_bytes);
 
-            const stack_offset = mem.alignForwardGeneric(u32, self.next_stack_offset, ptr_bytes) + ptr_bytes;
+            const stack_offset = mem.alignUpGeneric(u32, self.next_stack_offset, ptr_bytes) + ptr_bytes;
             self.next_stack_offset = stack_offset;
             self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
 
@@ -466,7 +466,7 @@ fn gen(self: *Self) !void {
 
         // Backpatch stack offset
         const total_stack_size = self.max_end_stack + self.saved_regs_stack_space;
-        const aligned_total_stack_end = mem.alignForwardGeneric(u32, total_stack_size, self.stack_align);
+        const aligned_total_stack_end = mem.alignUpGeneric(u32, total_stack_size, self.stack_align);
         const stack_size = aligned_total_stack_end - self.saved_regs_stack_space;
         if (math.cast(u12, stack_size)) |size| {
             self.mir_instructions.set(backpatch_reloc, .{
@@ -893,7 +893,7 @@ fn allocMem(self: *Self, inst: Air.Inst.Index, abi_size: u32, abi_align: u32) !u
     if (abi_align > self.stack_align)
         self.stack_align = abi_align;
     // TODO find a free slot instead of always appending
-    const offset = mem.alignForwardGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
+    const offset = mem.alignUpGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
     self.next_stack_offset = offset;
     self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
     try self.stack.putNoClobber(self.gpa, offset, .{
@@ -3653,7 +3653,7 @@ fn airRetLoad(self: *Self, inst: Air.Inst.Index) !void {
                 if (abi_align > self.stack_align)
                     self.stack_align = abi_align;
                 // TODO find a free slot instead of always appending
-                const offset = mem.alignForwardGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
+                const offset = mem.alignUpGeneric(u32, self.next_stack_offset, abi_align) + abi_size;
                 self.next_stack_offset = offset;
                 self.max_end_stack = @maximum(self.max_end_stack, self.next_stack_offset);
 
@@ -5395,7 +5395,7 @@ fn resolveCallingConventionValues(self: *Self, fn_ty: Type) !CallMCValues {
                     const param_size = @intCast(u32, ty.abiSize(self.target.*));
                     const param_alignment = ty.abiAlignment(self.target.*);
 
-                    stack_offset = std.mem.alignForwardGeneric(u32, stack_offset, param_alignment);
+                    stack_offset = std.mem.alignUpGeneric(u32, stack_offset, param_alignment);
                     result.args[i] = .{ .stack_argument_offset = stack_offset };
                     stack_offset += param_size;
                 } else {

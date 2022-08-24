@@ -1433,7 +1433,7 @@ pub const Object = struct {
 
                     var offset: u64 = 0;
                     offset += ptr_size;
-                    offset = std.mem.alignForwardGeneric(u64, offset, len_align);
+                    offset = std.mem.alignUpGeneric(u64, offset, len_align);
                     const len_offset = offset;
 
                     const fields: [2]*llvm.DIType = .{
@@ -1580,7 +1580,7 @@ pub const Object = struct {
 
                 var offset: u64 = 0;
                 offset += payload_size;
-                offset = std.mem.alignForwardGeneric(u64, offset, non_null_align);
+                offset = std.mem.alignUpGeneric(u64, offset, non_null_align);
                 const non_null_offset = offset;
 
                 const fields: [2]*llvm.DIType = .{
@@ -1667,12 +1667,12 @@ pub const Object = struct {
                     error_index = 0;
                     payload_index = 1;
                     error_offset = 0;
-                    payload_offset = std.mem.alignForwardGeneric(u64, error_size, payload_align);
+                    payload_offset = std.mem.alignUpGeneric(u64, error_size, payload_align);
                 } else {
                     payload_index = 0;
                     error_index = 1;
                     payload_offset = 0;
-                    error_offset = std.mem.alignForwardGeneric(u64, payload_size, error_align);
+                    error_offset = std.mem.alignUpGeneric(u64, payload_size, error_align);
                 }
 
                 var fields: [2]*llvm.DIType = undefined;
@@ -1775,7 +1775,7 @@ pub const Object = struct {
 
                         const field_size = field_ty.abiSize(target);
                         const field_align = field_ty.abiAlignment(target);
-                        const field_offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                        const field_offset = std.mem.alignUpGeneric(u64, offset, field_align);
                         offset = field_offset + field_size;
 
                         const field_name = if (ty.castTag(.anon_struct)) |payload|
@@ -1864,7 +1864,7 @@ pub const Object = struct {
 
                     const field_size = field.ty.abiSize(target);
                     const field_align = field.alignment(target, layout);
-                    const field_offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                    const field_offset = std.mem.alignUpGeneric(u64, offset, field_align);
                     offset = field_offset + field_size;
 
                     const field_name = try gpa.dupeZ(u8, fields.keys()[i]);
@@ -2018,10 +2018,10 @@ pub const Object = struct {
                 var payload_offset: u64 = undefined;
                 if (layout.tag_align >= layout.payload_align) {
                     tag_offset = 0;
-                    payload_offset = std.mem.alignForwardGeneric(u64, layout.tag_size, layout.payload_align);
+                    payload_offset = std.mem.alignUpGeneric(u64, layout.tag_size, layout.payload_align);
                 } else {
                     payload_offset = 0;
-                    tag_offset = std.mem.alignForwardGeneric(u64, layout.payload_size, layout.tag_align);
+                    tag_offset = std.mem.alignUpGeneric(u64, layout.payload_size, layout.tag_align);
                 }
 
                 const tag_di = dib.createMemberType(
@@ -2652,9 +2652,9 @@ pub const DeclGen = struct {
                     fields_buf[0] = llvm_error_type;
                     fields_buf[1] = llvm_payload_type;
                     const payload_end =
-                        std.mem.alignForwardGeneric(u64, error_size, payload_align) +
+                        std.mem.alignUpGeneric(u64, error_size, payload_align) +
                         payload_size;
-                    const abi_size = std.mem.alignForwardGeneric(u64, payload_end, error_align);
+                    const abi_size = std.mem.alignUpGeneric(u64, payload_end, error_align);
                     const padding = @intCast(c_uint, abi_size - payload_end);
                     if (padding == 0) {
                         return dg.context.structType(&fields_buf, 2, .False);
@@ -2665,9 +2665,9 @@ pub const DeclGen = struct {
                     fields_buf[0] = llvm_payload_type;
                     fields_buf[1] = llvm_error_type;
                     const error_end =
-                        std.mem.alignForwardGeneric(u64, payload_size, error_align) +
+                        std.mem.alignUpGeneric(u64, payload_size, error_align) +
                         error_size;
-                    const abi_size = std.mem.alignForwardGeneric(u64, error_end, payload_align);
+                    const abi_size = std.mem.alignUpGeneric(u64, error_end, payload_align);
                     const padding = @intCast(c_uint, abi_size - error_end);
                     if (padding == 0) {
                         return dg.context.structType(&fields_buf, 2, .False);
@@ -2706,7 +2706,7 @@ pub const DeclGen = struct {
                         const field_align = field_ty.abiAlignment(target);
                         big_align = @maximum(big_align, field_align);
                         const prev_offset = offset;
-                        offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                        offset = std.mem.alignUpGeneric(u64, offset, field_align);
 
                         const padding_len = offset - prev_offset;
                         if (padding_len > 0) {
@@ -2720,7 +2720,7 @@ pub const DeclGen = struct {
                     }
                     {
                         const prev_offset = offset;
-                        offset = std.mem.alignForwardGeneric(u64, offset, big_align);
+                        offset = std.mem.alignUpGeneric(u64, offset, big_align);
                         const padding_len = offset - prev_offset;
                         if (padding_len > 0) {
                             const llvm_array_ty = dg.context.intType(8).arrayType(@intCast(c_uint, padding_len));
@@ -2772,7 +2772,7 @@ pub const DeclGen = struct {
                         field_align < field_ty_align;
                     big_align = @maximum(big_align, field_align);
                     const prev_offset = offset;
-                    offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                    offset = std.mem.alignUpGeneric(u64, offset, field_align);
 
                     const padding_len = offset - prev_offset;
                     if (padding_len > 0) {
@@ -2786,7 +2786,7 @@ pub const DeclGen = struct {
                 }
                 {
                     const prev_offset = offset;
-                    offset = std.mem.alignForwardGeneric(u64, offset, big_align);
+                    offset = std.mem.alignUpGeneric(u64, offset, big_align);
                     const padding_len = offset - prev_offset;
                     if (padding_len > 0) {
                         const llvm_array_ty = dg.context.intType(8).arrayType(@intCast(c_uint, padding_len));
@@ -3353,7 +3353,7 @@ pub const DeclGen = struct {
                         const field_align = field_ty.abiAlignment(target);
                         big_align = @maximum(big_align, field_align);
                         const prev_offset = offset;
-                        offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                        offset = std.mem.alignUpGeneric(u64, offset, field_align);
 
                         const padding_len = offset - prev_offset;
                         if (padding_len > 0) {
@@ -3376,7 +3376,7 @@ pub const DeclGen = struct {
                     }
                     {
                         const prev_offset = offset;
-                        offset = std.mem.alignForwardGeneric(u64, offset, big_align);
+                        offset = std.mem.alignUpGeneric(u64, offset, big_align);
                         const padding_len = offset - prev_offset;
                         if (padding_len > 0) {
                             const llvm_array_ty = dg.context.intType(8).arrayType(@intCast(c_uint, padding_len));
@@ -3448,7 +3448,7 @@ pub const DeclGen = struct {
                     const field_align = field.alignment(target, struct_obj.layout);
                     big_align = @maximum(big_align, field_align);
                     const prev_offset = offset;
-                    offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+                    offset = std.mem.alignUpGeneric(u64, offset, field_align);
 
                     const padding_len = offset - prev_offset;
                     if (padding_len > 0) {
@@ -3471,7 +3471,7 @@ pub const DeclGen = struct {
                 }
                 {
                     const prev_offset = offset;
-                    offset = std.mem.alignForwardGeneric(u64, offset, big_align);
+                    offset = std.mem.alignUpGeneric(u64, offset, big_align);
                     const padding_len = offset - prev_offset;
                     if (padding_len > 0) {
                         const llvm_array_ty = dg.context.intType(8).arrayType(@intCast(c_uint, padding_len));
@@ -9449,7 +9449,7 @@ fn llvmFieldIndex(
             const field_align = field_ty.abiAlignment(target);
             big_align = @maximum(big_align, field_align);
             const prev_offset = offset;
-            offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+            offset = std.mem.alignUpGeneric(u64, offset, field_align);
 
             const padding_len = offset - prev_offset;
             if (padding_len > 0) {
@@ -9482,7 +9482,7 @@ fn llvmFieldIndex(
         const field_align = field.alignment(target, layout);
         big_align = @maximum(big_align, field_align);
         const prev_offset = offset;
-        offset = std.mem.alignForwardGeneric(u64, offset, field_align);
+        offset = std.mem.alignUpGeneric(u64, offset, field_align);
 
         const padding_len = offset - prev_offset;
         if (padding_len > 0) {
